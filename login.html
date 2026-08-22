@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Login - PERSATUAN SW</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: #f1f5f9;
+        }
+
+        .login-container {
+            width: 100%;
+            max-width: 420px;
+            padding: 20px;
+        }
+
+        .login-box {
+            background: white;
+            padding: 35px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.10);
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .logo h1 {
+            font-size: 28px;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+
+        .logo p {
+            color: #64748b;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 7px;
+            font-weight: bold;
+            color: #334155;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 15px;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: #2563eb;
+        }
+
+        button {
+            width: 100%;
+            padding: 13px;
+            border: none;
+            border-radius: 8px;
+            background: #2563eb;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        button:disabled {
+            background: #94a3b8;
+            cursor: not-allowed;
+        }
+
+        #message {
+            margin-top: 18px;
+            text-align: center;
+            font-size: 14px;
+            min-height: 20px;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #94a3b8;
+            font-size: 12px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="login-container">
+
+    <div class="login-box">
+
+        <div class="logo">
+            <h1>PERSATUAN SW</h1>
+            <p>Sistem Pengurusan Persatuan</p>
+        </div>
+
+        <form id="loginForm">
+
+            <div class="form-group">
+                <label for="email">Email</label>
+
+                <input
+                    type="email"
+                    id="email"
+                    placeholder="Masukkan email"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+
+                <input
+                    type="password"
+                    id="password"
+                    placeholder="Masukkan password"
+                    required
+                >
+            </div>
+
+            <button type="submit" id="loginButton">
+                LOGIN
+            </button>
+
+        </form>
+
+        <div id="message"></div>
+
+        <div class="footer">
+            PERSATUAN SW
+        </div>
+
+    </div>
+
+</div>
+
+<script>
+
+    // =====================================================
+    // SUPABASE CONFIGURATION
+    // =====================================================
+
+    const SUPABASE_URL = "https://mpzrzutpekkdqtuphykr.supabase.co";
+
+    const SUPABASE_KEY = "sb_publishable_li7vvseSoErseDlUe2_tkQ_RPY4bzgX";
+
+    const supabaseClient = window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_KEY
+    );
+
+
+    // =====================================================
+    // ELEMEN
+    // =====================================================
+
+    const loginForm = document.getElementById("loginForm");
+    const loginButton = document.getElementById("loginButton");
+    const message = document.getElementById("message");
+
+
+    // =====================================================
+    // LOGIN
+    // =====================================================
+
+    loginForm.addEventListener("submit", async function(event) {
+
+        event.preventDefault();
+
+        const email = document.getElementById("email").value.trim();
+        const password = document.getElementById("password").value;
+
+        message.textContent = "";
+        loginButton.disabled = true;
+        loginButton.textContent = "SEDANG LOGIN...";
+
+        try {
+
+            // Login Supabase Auth
+            const { data, error } =
+                await supabaseClient.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+
+            if (error) {
+                throw error;
+            }
+
+            // Pastikan user berjaya login
+            if (!data.user) {
+                throw new Error("Pengguna tidak ditemui.");
+            }
+
+            // Ambil profile dan role
+            const { data: profile, error: profileError } =
+                await supabaseClient
+                    .from("profiles")
+                    .select("id, nama, email, role")
+                    .eq("id", data.user.id)
+                    .single();
+
+            if (profileError) {
+                throw profileError;
+            }
+
+            // Simpan maklumat pengguna
+            localStorage.setItem(
+                "persatuan_user",
+                JSON.stringify(profile)
+            );
+
+            // Redirect ke Dashboard
+            window.location.href = "index.html";
+
+        } catch (error) {
+
+            console.error(error);
+
+            message.textContent =
+                "Login gagal: " + error.message;
+
+            message.style.color = "#dc2626";
+
+            // Jika login gagal, pastikan session dibuang
+            await supabaseClient.auth.signOut();
+
+        } finally {
+
+            loginButton.disabled = false;
+            loginButton.textContent = "LOGIN";
+
+        }
+
+    });
+
+</script>
+
+</body>
+</html>
